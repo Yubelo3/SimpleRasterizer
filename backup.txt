@@ -1,0 +1,73 @@
+int main()
+{
+    // Ray ray({0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, -1.0f});
+    // Triangle t{{-0.5f, -0.5f, 0.0f}, {0.5f, -0.5f, 0.0f}, {0.0f, 0.5f, 0.0f}};
+    // Scene scene;
+    // scene.add(&t);
+    // Intersection inter;
+    // scene.hit(ray, 0.0001f, std::numeric_limits<float>::infinity(), inter);
+    // std::cout << inter << std::endl;
+
+    // Objects
+    Surface *s1 = new Sphere{{0.0f, 0.0f, -150.0f}, 120.0f};
+    Surface *t1{new Triangle{{-100.0f, 0.0f, -100.0f},
+                             {100.0f, 0.0f, -100.0f},
+                             {0.0f, 100.0f, -100.0f}}};
+    s1->name = "sphere";
+    t1->name = "triangle";
+
+    // Lights
+    Light *l1{new Light{{0.0f, 200.0f, 0.0f}, {100.0f, 100.0f, 100.0f}}};
+    Light *l2{new Light{{-200.0f, 0.0f, 0.0f}, {0.0f, 10.0f, 6.0f}}};
+
+    Scene scene;
+    // scene.add(t1);
+    // scene.add(s1);
+    scene.add(l1);
+    scene.add(l2);
+    scene.add(t1);
+
+    Camera camera;
+    // Build transfrom matrices
+    Eigen::Matrix4f Mview = Transform3D::Mview(camera.e, camera.u, camera.v, camera.w);
+    Eigen::Matrix4f Mpersp = Transform3D::Mortho(640.0f, -640.0f, 360.0f, -360.0f, -0.0f, 500.0f) * Transform3D::Mpersp(0.0f, -500.0f);
+    Eigen::Matrix4f Mvp = Transform3D::Mvp(640, 360);
+
+    Renderer r(scene.height, scene.width);
+    float b = -scene.h / 2;
+    float l = -scene.w / 2;
+    float verticalScale = scene.h / scene.height;
+    float horizontalScale = scene.w / scene.width;
+    for (int i = 0; i < scene.height; i++)
+    {
+        for (int j = 0; j < scene.width; j++)
+        {
+            // Compute color the each pixel.
+            // 1、find the location of each pixel's center.
+            Eigen::Vector3f location{l + (j + 0.5f) * horizontalScale, b + (i + 0.5f) * verticalScale, 0.0f};
+            // 2、cast a parallel ray to the scene.
+            Ray ray{location, Eigen::Vector3f{0.0f, 0.0f, -1.0f}};
+            Intersection inter;
+            scene.hit(ray, scene.epsilon, std::numeric_limits<float>::infinity(), inter);
+            // 3、compute shading.
+            Eigen::Vector3f color{scene.background};
+            if (inter.happened)
+                color = scene.shade(inter, ray);
+            // std::cout << "color: " << color.transpose() << std::endl;
+
+            scene.draw({j, i}, color);
+        }
+    }
+
+    // rasterize2DLine({10, 10}, {630, 350}, scene);
+    // rasterize2DTriangle({100,100},{200,300},{300,200},scene);
+
+    // rasterizeAxes(scene);
+
+    // r.render(scene.pixels);
+    t1->transform(Transform3D::scale(2.0f, 1.0f, 1.0f));
+
+    // std::cout << Transform3D::translate(0.5f,1.2f,2.2f) << std::endl;
+
+    return 0;
+}
